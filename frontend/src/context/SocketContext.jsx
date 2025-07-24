@@ -1,75 +1,92 @@
 // src/context/SocketContext.jsx
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { io } from 'socket.io-client';
 import AuthContext from './AuthContext';
 
 const SocketContext = createContext();
 
 export const useSocket = () => {
-    return useContext(SocketContext);
+  return useContext(SocketContext);
 };
 
 export const SocketProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
     const [socket, setSocket] = useState(null);
-    const [isLoading, setIsLoading] = useState(true); // Always start as true
-
-    const [activeGame, setActiveGame] = useState(() => {
-        try {
-            const savedGame = localStorage.getItem('activeGame');
-            return savedGame ? JSON.parse(savedGame) : null;
-        } catch (error) {
-            return null;
-        }
-    });
+    const [activeGame, setActiveGame] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (user) {
-            // FIX: If we have a user but no socket, we are definitively in a loading state.
             setIsLoading(true);
-
-            const newSocket = io('https://chess-app-v3vb.onrender.com', { withCredentials: true });
-
+            const newSocket = io('http://localhost:3000', { 
+                withCredentials: true,
+                // Standard reconnection options
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+            });
+            
             newSocket.on("connect", () => {
                 console.log("Socket connected, sending FIND_ACTIVE_GAMES");
                 newSocket.emit('message', JSON.stringify({ type: 'find_active_games' }));
             });
 
-            // FIX: isLoading is ONLY set to false when we get a definitive answer.
             newSocket.on('active_game_found', (payload) => {
                 console.log("Active game found:", payload);
                 setActiveGame(payload);
-                localStorage.setItem('activeGame', JSON.stringify(payload));
-                setIsLoading(false); // Process finished
+                setIsLoading(false);
             });
 
             newSocket.on('no_active_game_found', () => {
                 console.log("No active game found for this user.");
                 setActiveGame(null);
-                localStorage.removeItem('activeGame');
-                setIsLoading(false); // Process finished
+                setIsLoading(false);
             });
 
             setSocket(newSocket);
 
-            return () => newSocket.disconnect();
-        } else {
-            // If there's no user, the "loading" phase for an authenticated session is over.
-            // But we must also ensure state is clean.
-            setActiveGame(null);
-            localStorage.removeItem('activeGame');
-            setIsLoading(false); 
-        }
-    }, [user]);
+            // --- CHANGE: Add Page Visibility API handler ---
+            const handleVisibilityChange = () => {
+                // When the tab becomes visible again...
+                if (document.visibilityState === 'visible') {
+                    // ...check if the socket is disconnected.
+                    if (newSocket && newSocket.disconnected) {
+                        console.log('Tab is visible and socket is disconnected. Attempting to reconnect...');
+                        // Manually trigger a connection attempt.
+                        newSocket.connect();
+                    }
+                }
+            };
 
+            // Add the event listener to the document
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            // --- END OF CHANGE ---
+
+            return () => {
+                console.log("Cleaning up socket and listeners.");
+                // --- CHANGE: Clean up the visibility listener ---
+                document.removeEventListener('visibilitychange', handleVisibilityChange);
+                newSocket.disconnect();
+            };
+        } else {
+            if (socket) {
+                socket.disconnect();
+                setSocket(null);
+            }
+            setIsLoading(false);
+        }
+    }, [user]); 
+    
+    const value = useMemo(() => ({
+        socket,
+        activeGame,
+        setActiveGame,
+        isLoading
+    }), [socket, activeGame, isLoading]);
+    
     return (
-        <SocketContext.Provider value={{
-            socket,
-            activeGame,
-            setActiveGame,
-            isLoading
-        }}>
+        <SocketContext.Provider value={value}>
             {children}
         </SocketContext.Provider>
     );
