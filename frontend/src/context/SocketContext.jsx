@@ -29,7 +29,7 @@ export const SocketProvider = ({ children }) => {
             // FIX: If we have a user but no socket, we are definitively in a loading state.
             setIsLoading(true);
 
-            const newSocket = io('http://localhost:3000', { withCredentials: true });
+            const newSocket = io('https://chess-app-v3vb.onrender.com', { withCredentials: true });
 
             newSocket.on("connect", () => {
                 console.log("Socket connected, sending FIND_ACTIVE_GAMES");
