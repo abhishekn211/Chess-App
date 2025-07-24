@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
         if (user) {
             setIsLoading(true);
-            const newSocket = io('https://chess-app-v3vb.onrender.com/api', { 
+            const newSocket = io('https://chess-app-v3vb.onrender.com', { 
                 withCredentials: true,
                 // Standard reconnection options
                 reconnection: true,
