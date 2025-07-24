@@ -22,7 +22,7 @@ const server = http.createServer(app);
 
 // --- Middleware ---
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", 'https://chess-app-opal.vercel.app'],
   credentials: true,
 }));
 app.use(express.json());
