@@ -19,19 +19,30 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
         if (user) {
             setIsLoading(true);
-            const newSocket = io('https://chess-app-v3vb.onrender.com', { 
+            
+            const SERVER_URL = 'https://chess-app-v3vb.onrender.com'; 
+            const newSocket = io(SERVER_URL, { 
                 withCredentials: true,
-                // Standard reconnection options
                 reconnection: true,
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
             });
             
+            // --- ADDED: More detailed event listeners for debugging ---
             newSocket.on("connect", () => {
-                console.log("Socket connected, sending FIND_ACTIVE_GAMES");
+                console.log(`%cSocket connected with ID: ${newSocket.id}`, 'color: green; font-weight: bold;');
                 newSocket.emit('message', JSON.stringify({ type: 'find_active_games' }));
             });
 
+            newSocket.on("disconnect", (reason) => {
+                console.warn(`%cSocket disconnected: ${reason}`, 'color: orange;');
+            });
+
+            newSocket.on("connect_error", (err) => {
+                console.error(`%cSocket connection error: ${err.message}`, 'color: red;');
+            });
+            // --- END OF ADDED LISTENERS ---
+            
             newSocket.on('active_game_found', (payload) => {
                 console.log("Active game found:", payload);
                 setActiveGame(payload);
@@ -46,26 +57,25 @@ export const SocketProvider = ({ children }) => {
 
             setSocket(newSocket);
 
-            // --- CHANGE: Add Page Visibility API handler ---
             const handleVisibilityChange = () => {
-                // When the tab becomes visible again...
                 if (document.visibilityState === 'visible') {
-                    // ...check if the socket is disconnected.
-                    if (newSocket && newSocket.disconnected) {
-                        console.log('Tab is visible and socket is disconnected. Attempting to reconnect...');
-                        // Manually trigger a connection attempt.
-                        newSocket.connect();
-                    }
+                    // --- CHANGE: Use a small timeout to allow the browser to fully resume ---
+                    setTimeout(() => {
+                        if (newSocket && !newSocket.connected) {
+                            console.log('%cTab is visible and socket is not connected. Forcing connection...', 'color: blue; font-weight: bold;');
+                            // The .connect() method is the correct way to manually initiate a connection.
+                            newSocket.connect();
+                        } else {
+                             console.log('%cTab is visible and socket is already connected.', 'color: green;');
+                        }
+                    }, 250); // 250ms delay
                 }
             };
 
-            // Add the event listener to the document
             document.addEventListener('visibilitychange', handleVisibilityChange);
-            // --- END OF CHANGE ---
 
             return () => {
                 console.log("Cleaning up socket and listeners.");
-                // --- CHANGE: Clean up the visibility listener ---
                 document.removeEventListener('visibilitychange', handleVisibilityChange);
                 newSocket.disconnect();
             };
