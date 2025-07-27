@@ -58,12 +58,20 @@ export default function LandingPage() {
           <p className="text-base sm:text-lg md:text-xl max-w-xl mb-6 sm:mb-8 drop-shadow">
             Outsmart your opponent. Train your mind. Conquer the board. A modern chess battleground for real warriors.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <Link
+            to="/ai"
+            className="bg-orange-600 hover:bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg text-base sm:text-lg shadow-lg transition"
+          >
+            Play vs AI
+          </Link>
           <Link
             to="/home"
             className="bg-orange-600 hover:bg-orange-500 text-white font-semibold px-6 py-3 rounded-lg text-base sm:text-lg shadow-lg transition"
           >
             Enter the Game
           </Link>
+          </div>
         </div>
 
         {/* ✅ Footer */}
