@@ -318,8 +318,25 @@ const GamePage = () => {
     };
 
     const handleMoveFromServer = (data) => {
-      console.log("SOCKET ON (Incoming): 'move'", data);
-      setMoveHistory((prev) => [...prev, data.move]);
+      console.log(`%c--- handleMoveFromServer Initiated ---`, 'color: #f39c12; font-weight: bold;');
+      const { move } = data;
+
+      if (move) {
+        // --- UPDATED: Sound logic without using deprecated .flags ---
+        if (move.san.includes('+') || move.san.includes('#')) {
+          playSound('move-check');
+        } else if (move.promotion) { // Check for a promotion
+          playSound('promote');
+        } else if (move.san === 'O-O' || move.san === 'O-O-O') { // Check for castling
+          playSound('castle');
+        } else if (move.captured) { // Check for a capture
+          playSound('capture');
+        } else {
+          playSound('move-self');
+        }
+        
+        setMoveHistory((prev) => [...prev, data.move]);
+      }
     };
 
     const handleGameEnded = (data) => {
@@ -392,7 +409,6 @@ const GamePage = () => {
     };
   }, [socket, isLoading, searchParams, navigate, user._id]);
 
-  
   const handleSendMessage = (messageText) => {
     if(isLoading || !socket) {
       console.log("Socket is not connected. Cannot send message.");
@@ -406,34 +422,45 @@ const GamePage = () => {
             }));
     }
   };
-
-  const handleMove = (from, to) => {
-    console.log(`HANDLER: handleMove called with from: ${from}, to: ${to}`);
+const handleMove = (from, to) => {
+    console.log(`%c--- handleMove Initiated ---`, 'color: #2980b9; font-weight: bold;');
     if (
       gameStatus !== "in_progress" ||
       gameRef.current.turn() !== boardOrientation[0]
     ) {
-      console.log("handleMove: Move blocked.", {
-        gameStatus,
-        turn: gameRef.current.turn(),
-        myTurn: boardOrientation[0],
-      });
+      console.error(" M-2: Move BLOCKED by guard clause.");
       return;
     }
-    const moveData = { from, to, promotion: "q" }; // Assume queen promotion for simplicity
+    const moveData = { from, to, promotion: "q" };
     const move = gameRef.current.move(moveData);
+
     if (!move) {
-      console.log("handleMove: Invalid move attempted.");
+      console.error(" M-4: Move is ILLEGAL. Playing sound and stopping.");
+      playSound('illegal');
       return;
     }
-    console.log("handleMove: Move successful locally.", move);
+
+    console.log("%c M-4: Move is LEGAL. Proceeding...", 'color: #27ae60;');
+
+    // --- UPDATED: Sound logic without using deprecated .flags ---
+    if (gameRef.current.isCheck()) {
+      playSound('move-check');
+    } else if (move.promotion) { // Check for a promotion
+      playSound('promote');
+    } else if (move.san === 'O-O' || move.san === 'O-O-O') { // Check for castling
+      playSound('castle');
+    } else if (move.captured) { // Check for a capture
+      playSound('capture');
+    } else {
+      playSound('move-self');
+    }
+
     setGame(new Chess(gameRef.current.fen()));
 
     const payload = {
       type: "move",
       payload: { gameId: gameId, move },
     };
-    console.log("SOCKET EMIT (Outgoing): 'message'", payload);
     socket?.emit("message", JSON.stringify(payload));
   };
 
