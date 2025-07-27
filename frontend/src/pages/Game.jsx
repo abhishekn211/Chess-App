@@ -392,16 +392,7 @@ const GamePage = () => {
     };
   }, [socket, isLoading, searchParams, navigate, user._id]);
 
-//   const dummyMessages = [
-//     { sender: "Opponent", text: "Hey, good luck have fun!" },
-//     { sender: "You", text: "Thanks, you too!" },
-//     { sender: "Opponent", text: "Nice opening." },
-//     { sender: "You", text: "Thanks, you too!" },
-//     { sender: "Opponent", text: "Nice opening." },
-//     { sender: "You", text: "Thanks, you too!" },
-//     { sender: "Opponent", text: "Nice opening." },
-//   ];
-
+  
   const handleSendMessage = (messageText) => {
     if(isLoading || !socket) {
       console.log("Socket is not connected. Cannot send message.");
