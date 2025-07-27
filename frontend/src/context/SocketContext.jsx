@@ -28,8 +28,8 @@ export const SocketProvider = ({ children }) => {
         if (user) {
             // FIX: If we have a user but no socket, we are definitively in a loading state.
             setIsLoading(true);
-
-            const newSocket = io('http://localhost:3000', { withCredentials: true });
+            const SERVER_URL = import.meta.env.VITE_SERVER_URL ;
+            const newSocket = io(SERVER_URL, { withCredentials: true });
 
             newSocket.on("connect", () => {
                 console.log("Socket connected, sending FIND_ACTIVE_GAMES");
