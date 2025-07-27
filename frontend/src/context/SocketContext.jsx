@@ -1,102 +1,75 @@
 // src/context/SocketContext.jsx
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import AuthContext from './AuthContext';
 
 const SocketContext = createContext();
 
 export const useSocket = () => {
-  return useContext(SocketContext);
+    return useContext(SocketContext);
 };
 
 export const SocketProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
     const [socket, setSocket] = useState(null);
-    const [activeGame, setActiveGame] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // Always start as true
+
+    const [activeGame, setActiveGame] = useState(() => {
+        try {
+            const savedGame = localStorage.getItem('activeGame');
+            return savedGame ? JSON.parse(savedGame) : null;
+        } catch (error) {
+            return null;
+        }
+    });
 
     useEffect(() => {
         if (user) {
+            // FIX: If we have a user but no socket, we are definitively in a loading state.
             setIsLoading(true);
-            
-            const SERVER_URL = import.meta.env.VITE_SERVER_URL ; 
-            const newSocket = io(SERVER_URL, { 
-                withCredentials: true,
-                reconnection: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
-            });
-            
-            // --- ADDED: More detailed event listeners for debugging ---
+
+            const newSocket = io('http://localhost:3000', { withCredentials: true });
+
             newSocket.on("connect", () => {
-                console.log(`%cSocket connected with ID: ${newSocket.id}`, 'color: green; font-weight: bold;');
+                console.log("Socket connected, sending FIND_ACTIVE_GAMES");
                 newSocket.emit('message', JSON.stringify({ type: 'find_active_games' }));
             });
 
-            newSocket.on("disconnect", (reason) => {
-                console.warn(`%cSocket disconnected: ${reason}`, 'color: orange;');
-            });
-
-            newSocket.on("connect_error", (err) => {
-                console.error(`%cSocket connection error: ${err.message}`, 'color: red;');
-            });
-            // --- END OF ADDED LISTENERS ---
-            
+            // FIX: isLoading is ONLY set to false when we get a definitive answer.
             newSocket.on('active_game_found', (payload) => {
                 console.log("Active game found:", payload);
                 setActiveGame(payload);
-                setIsLoading(false);
+                localStorage.setItem('activeGame', JSON.stringify(payload));
+                setIsLoading(false); // Process finished
             });
 
             newSocket.on('no_active_game_found', () => {
                 console.log("No active game found for this user.");
                 setActiveGame(null);
-                setIsLoading(false);
+                localStorage.removeItem('activeGame');
+                setIsLoading(false); // Process finished
             });
 
             setSocket(newSocket);
 
-            const handleVisibilityChange = () => {
-                if (document.visibilityState === 'visible') {
-                    // --- CHANGE: Use a small timeout to allow the browser to fully resume ---
-                    setTimeout(() => {
-                        if (newSocket && !newSocket.connected) {
-                            console.log('%cTab is visible and socket is not connected. Forcing connection...', 'color: blue; font-weight: bold;');
-                            // The .connect() method is the correct way to manually initiate a connection.
-                            newSocket.connect();
-                        } else {
-                             console.log('%cTab is visible and socket is already connected.', 'color: green;');
-                        }
-                    }, 250); // 250ms delay
-                }
-            };
-
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-
-            return () => {
-                console.log("Cleaning up socket and listeners.");
-                document.removeEventListener('visibilitychange', handleVisibilityChange);
-                newSocket.disconnect();
-            };
+            return () => newSocket.disconnect();
         } else {
-            if (socket) {
-                socket.disconnect();
-                setSocket(null);
-            }
-            setIsLoading(false);
+            // If there's no user, the "loading" phase for an authenticated session is over.
+            // But we must also ensure state is clean.
+            setActiveGame(null);
+            localStorage.removeItem('activeGame');
+            setIsLoading(false); 
         }
-    }, [user]); 
-    
-    const value = useMemo(() => ({
-        socket,
-        activeGame,
-        setActiveGame,
-        isLoading
-    }), [socket, activeGame, isLoading]);
-    
+    }, [user]);
+
     return (
-        <SocketContext.Provider value={value}>
+        <SocketContext.Provider value={{
+            socket,
+            activeGame,
+            setActiveGame,
+            isLoading
+        }}>
             {children}
         </SocketContext.Provider>
     );
