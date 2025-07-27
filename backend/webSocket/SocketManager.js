@@ -30,8 +30,29 @@ class SocketManager {
     this.userRoomMapping.set(socket.userId, roomId); // Map the User ID to the Room ID
 
     console.log(`SocketManager: User ${socket.username} (${socket.id}) added to room ${roomId.slice(-4)}`);
-    console.log(`SocketManager: Room ${roomId.slice(-4)} now has ${this.interestedSockets.get(roomId).length} connections.`);
+    console.log(`SocketManager: Room ${roomId.slice(-4)} now has ${this.interestedSockets.get(roomId).size} connections.`);
   }
+
+  removeExistingSocket(socket){
+    const existingRoomId = this.userRoomMapping.get(socket.userId);
+    if (existingRoomId) {
+      const existingSockets = this.interestedSockets.get(existingRoomId);
+      if (existingSockets) {
+        for (const s of existingSockets) {
+          if (s.userId === socket.userId && s.id !== socket.id) {
+            s.emit('forceDisconnect'); // Notify the existing socket to disconnect
+            s.disconnect(true); // Forcefully disconnect the existing socket
+            existingSockets.delete(s); // Remove it from the room
+          }
+        }
+      }
+      // If the room is now empty, remove it from the map
+      if (existingSockets && existingSockets.size === 0) {
+        this.interestedSockets.delete(existingRoomId);
+        console.log(`SocketManager: Room ${existingRoomId.slice(-4)} is now empty and deleted.`);
+      } 
+  }
+}
 
   /**
    * Broadcasts a message to all sockets in a specific room.
@@ -39,7 +60,7 @@ class SocketManager {
    * @param {string} eventName - The name of the event to emit.
    * @param {any} payload - The data to send with the event.
    */
-  broadcast(roomId, eventName, payload) {
+  broadcast(roomId, eventName, payload){
     const socketsInRoom = this.interestedSockets.get(roomId);
     if (!socketsInRoom || socketsInRoom.size === 0) {
       console.warn(`SocketManager: No sockets found in room ${roomId} to broadcast event '${eventName}'.`);

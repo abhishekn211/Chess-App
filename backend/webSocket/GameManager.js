@@ -59,6 +59,7 @@ export class GameManager {
   }
 
   addUser(socket) {
+    socketManager.removeExistingSocket(socket);
     this.addHandler(socket);
     console.log(`GameManager : ${socket.username} Connected For messages (User id: ${socket.userId}) (${socket.id})`);
   }
