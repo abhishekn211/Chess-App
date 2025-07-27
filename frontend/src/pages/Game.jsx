@@ -323,6 +323,8 @@ const GamePage = () => {
 
       if (move) {
         if (move.color === boardOrientation[0]) {
+          console.log('hello',move.color);
+          console.log('hello2 ',boardOrientation[0]);
           setMoveHistory((prev) => [...prev, data.move]);
           return; 
         }
@@ -411,7 +413,7 @@ const GamePage = () => {
       socket.off("move", handleMoveFromServer);
       socket.off('new_chat_message', handleNewChatMessage);
     };
-  }, [socket, isLoading, searchParams, navigate, user._id]);
+  }, [socket, isLoading, searchParams, navigate, user._id, boardOrientation]);
 
   const handleSendMessage = (messageText) => {
     if(isLoading || !socket) {

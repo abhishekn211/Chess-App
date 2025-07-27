@@ -21,23 +21,29 @@ const CustomChessboard = ({ game, boardOrientation, onMove }) => {
         setLegalMoves([]);
     };
 
-    const handleSquareClick = (squareId, piece) => {
-        if (selectedSquare === squareId) {
-            clearSelection();
-            return;
-        }
-
+    // +++ REPLACED with improved logic +++
+    const handleSquareClick = (squareId, clickedPiece) => {
+        // If a piece is already selected...
         if (selectedSquare) {
             const isLegalMove = legalMoves.find(move => move.to === squareId);
+            // Case 1: The new click is a valid move for the selected piece.
             if (isLegalMove) {
                 onMove(selectedSquare, squareId);
+                clearSelection();
+                return;
             }
-            clearSelection();
-        } 
-        else if (piece && piece.color === game.turn() && piece.color === boardOrientation[0]) {
+        }
+
+        // Case 2: The new click is on another one of your own pieces.
+        // This will "switch" the selection to the new piece.
+        if (clickedPiece && clickedPiece.color === game.turn() && clickedPiece.color === boardOrientation[0]) {
             const moves = game.moves({ square: squareId, verbose: true });
             setSelectedSquare(squareId);
             setLegalMoves(moves);
+        } 
+        // Case 3: The click is on an empty square or an opponent's piece (and not a legal move).
+        else {
+            clearSelection();
         }
     };
 
@@ -88,7 +94,6 @@ const CustomChessboard = ({ game, boardOrientation, onMove }) => {
                                     isLight ? "bg-[#f0d9b5]" : "bg-[#b58863]"
                                 }`}
                             >
-                                {/* NEW: Subtle semi-transparent green highlight for the selected square */}
                                 {selectedSquare === squareId && (
                                     <div className="absolute inset-0 bg-green-500/40"></div>
                                 )}
@@ -106,12 +111,11 @@ const CustomChessboard = ({ game, boardOrientation, onMove }) => {
                                     </div>
                                 )}
 
-                                {/* NEW: Lighter, more visually appealing legal move indicators */}
                                 {legalMove && (
                                     <div className="absolute w-full h-full flex items-center justify-center pointer-events-none z-20">
-                                        {/* Show a hollow ring for captures, and a small dot for empty squares */}
-                                        {legalMove.flags.includes('c') ? (
-                                            <div className="w-3/4 h-3/4 border-[3px] border-gray-900/25 rounded-4xl"></div>
+                                        {/* +++ UPDATED to use .captured instead of deprecated .flags +++ */}
+                                        {legalMove.captured ? (
+                                            <div className="w-full h-full border-[6px] border-gray-900/25 rounded-sm"></div>
                                         ) : (
                                             <div className="w-1/3 h-1/3 rounded-full bg-gray-900/25"></div>
                                         )}
