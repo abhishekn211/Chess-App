@@ -20,7 +20,7 @@ export const SocketProvider = ({ children }) => {
         if (user) {
             setIsLoading(true);
             
-            const SERVER_URL = 'https://chess-app-v3vb.onrender.com'; 
+            const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000'; 
             const newSocket = io(SERVER_URL, { 
                 withCredentials: true,
                 reconnection: true,

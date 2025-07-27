@@ -1,5 +1,5 @@
 import axios from 'axios';
-const API_BASE_URL = 'https://chess-app-v3vb.onrender.com/api' ; // you can later switch to env
+const API_BASE_URL = `${import.meta.env.VITE_SERVER_URL}/api` || 'http://localhost:3000/api';
 axios.defaults.withCredentials = true;
 
 export const fetchUser = async () => {
