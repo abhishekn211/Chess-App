@@ -26,6 +26,30 @@ import {
 const GamePage = () => {
   console.log("--- RENDER: GamePage Component ---");
 
+  const soundsRef = useRef({});
+
+  // + ADD: useEffect to preload all sounds once on component mount
+  useEffect(() => {
+    const soundNames = [
+      'capture', 'castle', 'game-end', 'game-start', 'illegal',
+      'move-check', 'move-self', 'promote', 'notify'
+    ];
+    soundNames.forEach(name => {
+      const isMp3 = name === 'notify';
+      const audio = new Audio(`/sounds/${name}.${isMp3 ? 'mp3' : 'webm'}`);
+      soundsRef.current[name] = audio;
+    });
+  }, []);
+
+  // + ADD: A helper function to safely play sounds
+  const playSound = (soundName) => {
+    const sound = soundsRef.current[soundName];
+    if (sound) {
+      sound.currentTime = 0; // Rewind to the start
+      sound.play().catch(error => console.error(`Error playing sound: ${soundName}`, error));
+    }
+  };
+
   const { user } = useContext(AuthContext);
   const { socket, activeGame, setActiveGame, isLoading } = useSocket();
   console.log("Active Game:", activeGame);
@@ -273,6 +297,7 @@ const GamePage = () => {
       setOpponentConnected(true);
       setActiveGame({ gameId: data.gameId });
       setChatHistory(data.chatHistory || []);
+      playSound('game-start');
     };
 
     const handleInitGame = (data) => {
@@ -299,6 +324,7 @@ const GamePage = () => {
 
     const handleGameEnded = (data) => {
       console.log("SOCKET ON (Incoming): 'game_ended'", data);
+      playSound('game-end');
       setGameStatus("ended");
       setGameResult(data);
       setPlayers((prev) => ({
@@ -332,6 +358,9 @@ const GamePage = () => {
     };
     const handleNewChatMessage = (newMessage) => {
             console.log("SOCKET ON (Incoming): 'new_chat_message'", newMessage);
+            if (newMessage.senderId !== user._id) {
+              playSound('notify');
+            }
             setChatHistory(prevHistory => [...prevHistory, newMessage]);
     };
     console.log("Main Effect: Attaching socket listeners.");
