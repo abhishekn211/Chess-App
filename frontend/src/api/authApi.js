@@ -1,5 +1,5 @@
 import axios from 'axios';
-const API_BASE_URL = `${import.meta.env.VITE_SERVER_URL}/api` || 'http://localhost:3000/api';
+const API_BASE_URL = `${import.meta.env.VITE_SERVER_URL}/api`;
 axios.defaults.withCredentials = true;
 
 export const fetchUser = async () => {
@@ -7,6 +7,7 @@ export const fetchUser = async () => {
         const response = await axios.get(`${API_BASE_URL}/auth/status`, {
             withCredentials: true,
         });
+        console.log("User fetched:", response.data);
         return response.data;
     } catch (error) {
         throw error?.response?.data?.message || "Failed to fetch user.";

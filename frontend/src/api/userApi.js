@@ -1,7 +1,7 @@
 // src/api/userApi.js
 
 import axios from 'axios';
-const API_BASE_URL = `${import.meta.env.VITE_SERVER_URL}/api` || 'http://localhost:3000/api'; // Use environment variable or default to localhost
+const API_BASE_URL = `${import.meta.env.VITE_SERVER_URL}/api` ; // Use environment variable or default to localhost
 axios.defaults.withCredentials = true;
 
 // Apni profile fetch karna
