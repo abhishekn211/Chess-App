@@ -322,6 +322,10 @@ const GamePage = () => {
       const { move } = data;
 
       if (move) {
+        if (move.color === boardOrientation[0]) {
+          setMoveHistory((prev) => [...prev, data.move]);
+          return; 
+        }
         // --- UPDATED: Sound logic without using deprecated .flags ---
         if (move.san.includes('+') || move.san.includes('#')) {
           playSound('move-check');
