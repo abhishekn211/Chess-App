@@ -7,13 +7,4 @@
     <url>
         <loc>https://chess-app-opal.vercel.app/</loc>
     </url>
-    <url>
-        <loc>https://chess-app-opal.vercel.app/home</loc>
-    </url>
-    <url>
-        <loc>https://chess-app-opal.vercel.app/profile</loc>
-    </url>
-    <url>
-        <loc>https://chess-app-opal.vercel.app/game</loc>
-    </url>
 </urlset>
